@@ -62,9 +62,13 @@ def test_reinvestigation_is_idempotent(db):
     result = run_scenario(db, "db-exhaustion", investigate_incident=True)
     inc = get_by_ref(db, result.incident_ref)
     n_ev_1 = len(inc.evidence)
+    summary_1 = inc.summary
     from nirikshan.ai.investigator import investigate
 
     investigate(db, inc)
     db.refresh(inc)
     assert len(inc.evidence) == n_ev_1  # not duplicated
     assert len({h.rank for h in inc.hypotheses}) == len(inc.hypotheses)
+    # the AI-analysis block is replaced, not appended, so the summary stays bounded
+    assert inc.summary.count("--- AI analysis ---") == 1
+    assert len(inc.summary) <= len(summary_1) + 20

@@ -45,3 +45,10 @@ logs/
 .nirikshan/
 playwright-report/
 test-results/
+
+# --- Playwright ---
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/e2e/screenshots/
+apps/web/blob-report/
+apps/web/.playwright/

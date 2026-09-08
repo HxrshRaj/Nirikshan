@@ -283,7 +283,11 @@ def investigate(db: Session, incident: Incident, *, prompt_version: str | None =
         incident.affected_services = sorted(
             {incident.service_name, *br.get("direct_dependents", []), *br.get("indirect_dependents", [])}
         )
-        incident.summary = (incident.summary + "\n\n" + result.summary).strip()
+        # Keep the original detection summary; replace (not append) the AI block
+        # so re-investigation does not grow the field unbounded.
+        marker = "\n\n--- AI analysis ---\n"
+        base = incident.summary.split(marker, 1)[0].rstrip()
+        incident.summary = f"{base}{marker}{result.summary}".strip()
         db.add(incident)
 
         run.status = AgentRunStatus.COMPLETED.value

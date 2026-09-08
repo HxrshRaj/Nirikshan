@@ -18,6 +18,7 @@ ruff check src tests evaluation
 | `failure` | fault injection / resilience | SQLite `:memory:`, `fakeredis` |
 | `ai_eval` | evaluation harness thresholds | SQLite `:memory:`, `fakeredis` |
 | `integration` | real Postgres + Redis, Streams, concurrency | **real** containers |
+| Playwright | frontend E2E (login, dashboards, RBAC, RCA UI) | live `docker compose` stack |
 
 ## What is covered
 
@@ -55,6 +56,23 @@ Redis.
 publish/read/ack round-trip; the worker's `drain()` turns a `TELEMETRY_RECEIVED`
 event into an incident using its own sessions; two sessions acknowledging the
 same incident stay consistent.
+
+## Frontend E2E (Playwright)
+
+```bash
+docker compose up -d --wait api web worker
+# seed one incident (see the `e2e` CI job for the exact curl calls)
+cd apps/web && npm ci && npx playwright install --with-deps chromium
+npm run e2e            # or: npm run e2e:ui
+```
+
+`e2e/dashboard.spec.ts` asserts: login + overview stat tiles + demo topology;
+incident-detail RCA block, ranked hypotheses, evidence panel, timeline and the
+"Demo / Mock Provider" label; the service-map SVG; the AI-run page's tool-call
+audit trail and grounding panel; and that a `VIEWER` sees the "requires ADMIN"
+gate on Settings. Screenshots land in `apps/web/e2e/screenshots/` (a curated
+copy is in `docs/screenshots/`). The `e2e` CI job runs this against a freshly
+built compose stack.
 
 ## Running integration locally
 

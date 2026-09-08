@@ -99,6 +99,18 @@ See table in §1. Highlights that matter in an interview:
   rate limiting fails open, the API stays online. Postgres is the only hard
   dependency.
 
+### Screenshots
+
+Captured by the Playwright E2E suite against a live `docker compose` stack
+(`apps/web/e2e/dashboard.spec.ts`) — not mock-ups.
+
+| | |
+|---|---|
+| ![Overview](docs/screenshots/01-overview.png) | ![Incident detail](docs/screenshots/03-incident-detail.png) |
+| **Overview** — active incidents, degraded services, error rate / p95, recent AI investigations | **Incident detail** — severity score breakdown, blast radius, evidence-grounded RCA (0.91), ranked hypotheses with evidence pills, fact-only timeline |
+| ![Service map](docs/screenshots/04-service-map.png) | ![Investigation audit trail](docs/screenshots/05-investigation-run.png) |
+| **Service map** — dependency graph with per-node health + open-incident badges; click a node for blast radius | **AI investigation run** — every evidence tool call (args, rows, duration), grounded vs. available evidence ids, warnings |
+
 ## 5. Telemetry pipeline
 
 `POST /api/telemetry/{logs,metrics,traces}` (single object or batch). Stages:
@@ -233,13 +245,19 @@ NIRIKSHAN_TEST_DATABASE_URL=postgresql+psycopg://nirikshan:nirikshan@localhost:5
 NIRIKSHAN_TEST_REDIS_URL=redis://localhost:56379/15 pytest -q -m integration
 ```
 
-Markers: `unit`, `integration`, `e2e`, `ai_eval`, `failure`. Coverage of anomaly
-algorithms, alert rules, the incident state machine, correlation/dedup, the
-dependency graph + blast radius, remediation policy + RBAC, AI guardrails
-(uncited-evidence drop, disallowed-action rejection), auth/tokens, telemetry
-validation; full-scenario pipeline and HTTP-flow e2e; fault injection (AI
-timeout, malformed AI output, duplicate alerts, unauthorized remediation, Redis
-outage). See [`docs/testing.md`](docs/testing.md).
+Markers: `unit`, `integration`, `e2e`, `ai_eval`, `failure`. ~102 Python tests
+covering anomaly algorithms, baselines, alert rules, the incident state machine,
+correlation/dedup, the dependency graph + blast radius, the service catalogue,
+telemetry queries, remediation registry actions + policy + RBAC + verification,
+rate limiting, incident memory / RAG, AI guardrails (uncited-evidence drop,
+disallowed-action rejection), auth/tokens; full-scenario pipeline and HTTP-flow
+e2e; fault injection (AI timeout, malformed AI output, duplicate alerts,
+unauthorized remediation, Redis outage + circuit breaker).
+
+Frontend E2E is Playwright (`cd apps/web && npm run e2e`) driven against a live
+`docker compose` stack — login, overview stats, incident-detail RCA + timeline,
+service-map graph, the AI-run audit trail, and UI-level RBAC. See
+[`docs/testing.md`](docs/testing.md).
 
 ## 20. AI evaluation
 
@@ -328,9 +346,10 @@ nirikshan/
 │   ├── api/          FastAPI app, routers, serializers, SSE
 │   ├── workers/      event consumer loop + handlers + periodic maintenance
 │   └── demo/         topology, deterministic telemetry generator, scenarios, remediation flow
-├── apps/web/         Next.js dashboard (App Router, Tailwind)
+├── apps/web/         Next.js dashboard (App Router, Tailwind) + Playwright e2e/
 ├── migrations/       Alembic
 ├── evaluation/       AI evaluation harness runner
+├── scripts/          load test
 ├── tests/            unit · integration · e2e · failure · ai_eval
 ├── docs/             architecture, ai-investigation, incident-lifecycle, remediation, security, api, testing, limitations
 ├── infrastructure/   container entrypoint
