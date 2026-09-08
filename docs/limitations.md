@@ -54,7 +54,7 @@ numbers — they are entirely host-dependent. Run it yourself and record the
 conditions.
 
 ## Verified in this build
-- 58 automated tests green (unit/e2e/failure/ai_eval on SQLite+fakeredis;
+- 83 Python tests + 5 Playwright specs green (unit/e2e/failure/ai_eval on SQLite+fakeredis;
   integration on real PostgreSQL 16 + Redis 7).
 - Alembic migration applies and round-trips (`upgrade → downgrade → upgrade`).
 - Full pipeline exercised end-to-end through the HTTP API and the browser UI

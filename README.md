@@ -245,7 +245,7 @@ NIRIKSHAN_TEST_DATABASE_URL=postgresql+psycopg://nirikshan:nirikshan@localhost:5
 NIRIKSHAN_TEST_REDIS_URL=redis://localhost:56379/15 pytest -q -m integration
 ```
 
-Markers: `unit`, `integration`, `e2e`, `ai_eval`, `failure`. ~102 Python tests
+Markers: `unit`, `integration`, `e2e`, `ai_eval`, `failure`. 83 Python test items (87 with parametrisation) + a 5-spec Playwright suite
 covering anomaly algorithms, baselines, alert rules, the incident state machine,
 correlation/dedup, the dependency graph + blast radius, the service catalogue,
 telemetry queries, remediation registry actions + policy + RBAC + verification,
