@@ -1,0 +1,16 @@
+# Normalise line endings: store everything as LF in the repo.
+* text=auto eol=lf
+
+# Scripts that must be LF for containers / POSIX shells.
+*.sh    text eol=lf
+*.mako  text eol=lf
+infrastructure/entrypoint.sh text eol=lf
+
+# Binary / generated - never touch.
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.whl   binary
+package-lock.json -diff
