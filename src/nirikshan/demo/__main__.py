@@ -16,13 +16,18 @@ def _seed() -> dict:
     from nirikshan.demo.topology import ensure_topology
     from nirikshan.security.users import ensure_bootstrap_admin, seed_demo_users
 
+    # Separate transactions so a failure in the (large, slow) telemetry step
+    # cannot roll back prompt/user/topology creation.
     with session_scope() as db:
         sync_prompts(db)
         ensure_bootstrap_admin(db)
-        services = ensure_topology(db)
-        info = generate(db, scenario=None)
         seed_demo_users(db)
-    return {"services": len(services), "telemetry": info}
+    with session_scope() as db:
+        services = ensure_topology(db)
+        n_services = len(services)
+    with session_scope() as db:
+        info = generate(db, scenario=None)
+    return {"services": n_services, "telemetry": info}
 
 
 def main() -> None:

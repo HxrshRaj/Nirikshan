@@ -43,9 +43,10 @@ def seed(
     from nirikshan.demo.topology import ensure_topology
     from nirikshan.security.users import seed_demo_users
 
-    services = ensure_topology(db)
-    info = generate(db, scenario=None)
     seed_demo_users(db)
+    services = ensure_topology(db)
+    db.flush()
+    info = generate(db, scenario=None)
     audit.record(db, actor=user.email, actor_role=user.role, action="demo.seed", resource_type="demo")
     return {"services": len(services), "telemetry": info,
             "demo_users": "one per role, password '<role>12345'"}

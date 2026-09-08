@@ -255,9 +255,11 @@ investigator: `rca_accuracy` (must be 1.0 on the deterministic set),
 
 ## 21. Load testing
 
-`scripts/loadtest.py` drives batched telemetry ingestion and reports
-events/sec and ingestion latency. Numbers depend entirely on the host and are
-**not** published here — run it against your own environment and record the
+`scripts/loadtest.py` drives batched telemetry ingestion and reports events/sec
+and per-batch latency percentiles. [`docs/load-testing.md`](docs/load-testing.md)
+records one run with its full environment (~2,090 events/sec for 100k events on
+a laptop `docker compose` stack) and analyses the write-path bottleneck. Numbers
+are host-dependent — run it against your own environment and record the
 conditions.
 
 ## 22. Demo scenarios
