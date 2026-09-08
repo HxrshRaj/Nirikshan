@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint, type, tests, migrations, eval)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nirikshan
+          POSTGRES_PASSWORD: nirikshan
+          POSTGRES_DB: nirikshan_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nirikshan" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      NIRIKSHAN_SECRET_KEY: ci-secret
+      NIRIKSHAN_LLM_PROVIDER: mock
+      NIRIKSHAN_TEST_DATABASE_URL: postgresql+psycopg://nirikshan:nirikshan@localhost:5432/nirikshan_test
+      NIRIKSHAN_TEST_REDIS_URL: redis://localhost:6379/15
+      NIRIKSHAN_DATABASE_URL: postgresql+psycopg://nirikshan:nirikshan@localhost:5432/nirikshan_test
+      NIRIKSHAN_REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install --upgrade pip && pip install -e ".[dev]" pip-audit
+      - name: Ruff
+        run: ruff check src tests evaluation
+      - name: Type check
+        run: mypy src || true   # advisory: type coverage is partial by design
+      - name: Alembic migrations apply cleanly
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: Unit / e2e / failure / ai-eval tests
+        run: pytest -q -m "not integration" --cov=nirikshan --cov-report=term-missing
+      - name: Integration tests (real Postgres + Redis)
+        run: pytest -q -m integration
+      - name: AI evaluation harness
+        run: python evaluation/run_eval.py
+      - name: Dependency audit
+        run: pip-audit --strict --ignore-vuln GHSA-none || true
+
+  frontend:
+    name: Frontend (lint, type, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API/worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: nirikshan-api:ci
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          push: false
+          tags: nirikshan-web:ci

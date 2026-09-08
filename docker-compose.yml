@@ -1,0 +1,87 @@
+# Nirikshan - AI-Powered SRE & Incident Response Platform
+# Bring the whole stack up with:  docker compose up --build
+name: nirikshan
+
+x-python-env: &python-env
+  NIRIKSHAN_ENV: development
+  NIRIKSHAN_LOG_LEVEL: INFO
+  NIRIKSHAN_DATABASE_URL: postgresql+psycopg://nirikshan:nirikshan@postgres:5432/nirikshan
+  NIRIKSHAN_REDIS_URL: redis://redis:6379/0
+  NIRIKSHAN_SECRET_KEY: ${NIRIKSHAN_SECRET_KEY:-dev-only-insecure-secret-change-me}
+  NIRIKSHAN_CORS_ORIGINS: http://localhost:3000
+  NIRIKSHAN_LLM_PROVIDER: ${NIRIKSHAN_LLM_PROVIDER:-mock}
+  NIRIKSHAN_LLM_MODEL: ${NIRIKSHAN_LLM_MODEL:-mock-sre-1}
+  NIRIKSHAN_LLM_API_KEY: ${NIRIKSHAN_LLM_API_KEY:-}
+  NIRIKSHAN_LLM_BASE_URL: ${NIRIKSHAN_LLM_BASE_URL:-}
+  NIRIKSHAN_REMEDIATION_MODE: ${NIRIKSHAN_REMEDIATION_MODE:-APPROVAL_REQUIRED}
+  NIRIKSHAN_BOOTSTRAP_ADMIN_EMAIL: admin@nirikshan.dev
+  NIRIKSHAN_BOOTSTRAP_ADMIN_PASSWORD: ${NIRIKSHAN_BOOTSTRAP_ADMIN_PASSWORD:-admin12345}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nirikshan
+      POSTGRES_PASSWORD: nirikshan
+      POSTGRES_DB: nirikshan
+    ports: ["5433:5432"]
+    volumes: ["nirikshan_pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nirikshan -d nirikshan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports: ["6380:6379"]
+    volumes: ["nirikshan_redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: { context: ., dockerfile: Dockerfile }
+    command: ["api"]
+    environment: *python-env
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ., dockerfile: Dockerfile }
+    command: ["worker"]
+    environment: *python-env
+    # the worker has no HTTP server; the image's curl healthcheck does not apply
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  # one-shot: seeds topology + baseline telemetry + demo users, then exits
+  seed:
+    build: { context: ., dockerfile: Dockerfile }
+    command: ["demo"]
+    environment: *python-env
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+    restart: "no"
+
+  web:
+    build: { context: ./apps/web, dockerfile: Dockerfile }
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      API_INTERNAL_BASE_URL: http://api:8000
+    ports: ["3000:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  nirikshan_pgdata:
+  nirikshan_redisdata:

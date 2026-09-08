@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0b0e14;
+  color: #e6ebf4;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #232b3b;
+  border-radius: 6px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-border bg-panel p-4;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-md border border-border bg-panel2 px-3 py-1.5 text-sm hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+  }
+  .btn-primary {
+    @apply border-accent bg-accent/15 text-accent hover:bg-accent/25;
+  }
+  .btn-danger {
+    @apply border-bad/60 bg-bad/10 text-bad hover:bg-bad/20;
+  }
+  .input {
+    @apply rounded-md border border-border bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-accent;
+  }
+  .th {
+    @apply px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted;
+  }
+  .td {
+    @apply px-3 py-2 align-top;
+  }
+  .row {
+    @apply border-t border-border hover:bg-panel2/60;
+  }
+  .kv {
+    @apply grid grid-cols-[160px_1fr] gap-x-3 gap-y-1.5 text-sm;
+  }
+  .pill {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium;
+  }
+}
