@@ -81,7 +81,11 @@ platform beats strict limiting.
 
 `.env` is git-ignored; only `.env.example` is committed. The platform boots and
 runs fully without any AI credentials (mock provider). CI uses throwaway
-secrets. `pip-audit` runs in CI (advisory).
+secrets. `pip-audit` runs in CI (advisory); the pinned dependency tree is
+currently clean ("No known vulnerabilities found") — `fastapi`/`starlette`,
+`pyjwt`, `python-multipart` and `pytest` were bumped past their 2026 advisories.
+The API logs a warning at startup if `NIRIKSHAN_SECRET_KEY` is the default or
+shorter than 32 bytes in a non-development environment.
 
 ## Known gaps
 

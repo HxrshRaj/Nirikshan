@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-os.environ.setdefault("NIRIKSHAN_SECRET_KEY", "test-secret")
+os.environ.setdefault("NIRIKSHAN_SECRET_KEY", "test-secret-key-at-least-32-bytes-long-000")
 os.environ.setdefault("NIRIKSHAN_LLM_PROVIDER", "mock")
 os.environ.setdefault("NIRIKSHAN_BOOTSTRAP_ADMIN_EMAIL", "admin@nirikshan.dev")
 os.environ.setdefault("NIRIKSHAN_BOOTSTRAP_ADMIN_PASSWORD", "admin12345")

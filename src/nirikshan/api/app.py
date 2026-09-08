@@ -24,6 +24,17 @@ log = get_logger("api")
 async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
+
+    _dev_secret = "dev-only-insecure-secret-change-me"
+    if settings.env != "development" and (
+        settings.secret_key == _dev_secret or len(settings.secret_key) < 32
+    ):
+        log.warning(
+            "api.weak_secret_key",
+            detail="NIRIKSHAN_SECRET_KEY is the default or <32 bytes; set a strong random value",
+            env=settings.env,
+        )
+
     init_engine(settings)
     create_all()  # dev/test bootstrap; production also runs `alembic upgrade head`
 
