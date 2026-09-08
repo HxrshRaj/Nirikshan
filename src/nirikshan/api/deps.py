@@ -72,6 +72,22 @@ def require_role(minimum: Role):
     return _dep
 
 
+def ingest_guard(
+    x_ingest_token: str | None = Header(default=None),
+) -> None:
+    """Telemetry ingestion auth. Open when NIRIKSHAN_INGEST_TOKEN is unset (demo);
+    otherwise requires a matching ``X-Ingest-Token`` header (constant-time compare)."""
+    import secrets
+
+    from nirikshan.core.config import get_settings
+
+    expected = get_settings().ingest_token
+    if not expected:
+        return
+    if not x_ingest_token or not secrets.compare_digest(x_ingest_token, expected):
+        raise AuthError("invalid or missing X-Ingest-Token")
+
+
 def rate_limit(name: str):
     limiter = RateLimit(name)
 

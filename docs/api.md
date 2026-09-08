@@ -19,10 +19,12 @@ PATCH  /api/users/{id}            (ADMIN)
 ```
 
 ## Telemetry
+Ingestion is rate-limited and, when `NIRIKSHAN_INGEST_TOKEN` is set, requires an
+`X-Ingest-Token` header. No user auth (collectors have no session).
 ```
-POST   /api/telemetry/logs        LogIn | {logs: [LogIn]}      (rate-limited)
-POST   /api/telemetry/metrics     MetricIn | {metrics: [...]}  (rate-limited)
-POST   /api/telemetry/traces      TraceIn | {traces: [...]}    (rate-limited)
+POST   /api/telemetry/logs        LogIn | {logs: [LogIn]}
+POST   /api/telemetry/metrics     MetricIn | {metrics: [...]}
+POST   /api/telemetry/traces      TraceIn | {traces: [...]}
 GET    /api/logs                  ?service&level&min_level&query&trace_id&minutes&limit&offset
 GET    /api/logs/histogram        ?service&minutes&buckets
 GET    /api/metrics/series        ?service&metric&minutes&step_seconds&aggregation

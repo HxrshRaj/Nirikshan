@@ -33,6 +33,22 @@ demo seed / scenario / drive-remediation. Sensitive keys
 (`password`, `token`, `secret`, `api_key`, `authorization`, …) are scrubbed to
 `***` in before/after.
 
+## Telemetry ingestion
+
+`POST /api/telemetry/{logs,metrics,traces}` are **not** behind user auth — real
+telemetry collectors don't have a user session. Protection:
+
+- Pydantic + semantic validation on every row; malformed rows are skipped and
+  counted, never fatal.
+- Per-identity rate limiting (`telemetry`, 2000/60s).
+- Optional shared secret: set `NIRIKSHAN_INGEST_TOKEN` and every ingestion call
+  must carry a matching `X-Ingest-Token` header (constant-time compare).
+  Unset (the default) means open ingestion — acceptable for the local demo,
+  not for a shared deployment.
+
+In production you would additionally scope ingestion by network policy and/or
+per-collector API keys.
+
 ## Rate limiting
 
 Redis fixed-window counters (`security/ratelimit.py`) on:

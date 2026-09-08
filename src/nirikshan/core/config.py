@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     refresh_token_ttl_minutes: int = 60 * 24 * 30
     bootstrap_admin_email: str | None = "admin@nirikshan.dev"
     bootstrap_admin_password: str | None = "admin12345"
+    # Optional shared secret for telemetry ingestion. When set, the
+    # /api/telemetry/* endpoints require a matching `X-Ingest-Token` header.
+    # Unset (default) => open ingestion, suitable for the local demo only.
+    ingest_token: str | None = None
 
     # --- Datastores ---
     database_url: str = "sqlite+pysqlite:///./nirikshan.sqlite3"

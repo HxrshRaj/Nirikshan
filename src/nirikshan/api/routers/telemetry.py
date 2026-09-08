@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from nirikshan.api.deps import current_user, get_db, rate_limit
+from nirikshan.api.deps import current_user, get_db, ingest_guard, rate_limit
 from nirikshan.models import User
 from nirikshan.schemas.common import Page
 from nirikshan.schemas.telemetry import (
@@ -22,22 +22,22 @@ from nirikshan.telemetry import ingest, query
 
 router = APIRouter(tags=["telemetry"])
 
-_ingest_rl = Depends(rate_limit("telemetry"))
+_ingest_deps = [Depends(rate_limit("telemetry")), Depends(ingest_guard)]
 
 
-@router.post("/telemetry/logs", response_model=IngestResult, dependencies=[_ingest_rl])
+@router.post("/telemetry/logs", response_model=IngestResult, dependencies=_ingest_deps)
 def ingest_logs(body: LogBatch | LogIn, db: Session = Depends(get_db)) -> IngestResult:
     items = body.logs if isinstance(body, LogBatch) else [body]
     return ingest.ingest_logs(db, items)
 
 
-@router.post("/telemetry/metrics", response_model=IngestResult, dependencies=[_ingest_rl])
+@router.post("/telemetry/metrics", response_model=IngestResult, dependencies=_ingest_deps)
 def ingest_metrics(body: MetricBatch | MetricIn, db: Session = Depends(get_db)) -> IngestResult:
     items = body.metrics if isinstance(body, MetricBatch) else [body]
     return ingest.ingest_metrics(db, items)
 
 
-@router.post("/telemetry/traces", response_model=IngestResult, dependencies=[_ingest_rl])
+@router.post("/telemetry/traces", response_model=IngestResult, dependencies=_ingest_deps)
 def ingest_traces(body: TraceBatch | TraceIn, db: Session = Depends(get_db)) -> IngestResult:
     items = body.traces if isinstance(body, TraceBatch) else [body]
     return ingest.ingest_traces(db, items)
