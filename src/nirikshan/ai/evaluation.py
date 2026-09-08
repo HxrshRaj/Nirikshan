@@ -23,7 +23,7 @@ import fakeredis
 
 from nirikshan.core import redis_bus
 from nirikshan.core.config import get_settings
-from nirikshan.core.db import create_all, init_engine, reset_engine, session_scope
+from nirikshan.core.db import create_all, drop_all, init_engine, reset_engine, session_scope
 from nirikshan.core.logging import get_logger
 from nirikshan.demo.scenarios import SCENARIOS, run_scenario
 from nirikshan.remediation.registry import REGISTRY
@@ -163,12 +163,17 @@ def run_evaluation(scenarios: list[str] | None = None) -> EvalReport:
     scores: list[ScenarioScore] = []
 
     for key in scenarios:
+        # Each scenario is scored in a pristine schema so results are independent
+        # of ordering and of any pre-existing data (e.g. a persistent Postgres in CI).
         redis_bus.set_client(fakeredis.FakeStrictRedis(decode_responses=True))
         reset_engine()
         init_engine(settings)
+        drop_all()
         create_all()
         with session_scope() as db:
             scores.append(_score_one(db, key))
+    reset_engine()
+    redis_bus.set_client(None)
 
     n = len(scores)
     rca_acc = sum(s.rca_correct for s in scores) / n
