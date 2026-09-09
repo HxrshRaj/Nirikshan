@@ -49,6 +49,13 @@ async def lifespan(app: FastAPI):
         ensure_group()
     except Exception as exc:
         log.warning("api.redis_group_failed", error=str(exc))
+
+    worker_in_process = False
+    if settings.run_worker_in_process:
+        from nirikshan.workers.runner import start_in_process
+
+        worker_in_process = start_in_process()
+
     log.info(
         "api.started",
         env=settings.env,
@@ -56,8 +63,13 @@ async def lifespan(app: FastAPI):
         prompts_synced=added,
         bootstrap_admin=bool(admin),
         redis=is_healthy(),
+        worker_in_process=worker_in_process,
     )
     yield
+    if worker_in_process:
+        from nirikshan.workers.runner import stop_in_process
+
+        stop_in_process()
     log.info("api.stopped")
 
 

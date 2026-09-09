@@ -1,7 +1,9 @@
 "use client";
 
-const BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8000";
+// Explicit "" => call same-origin "/api/*" (proxied by next.config rewrites).
+// Unset => local dev default. A URL => call that host directly (CORS must allow it).
+const RAW = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE = (RAW === undefined ? "http://localhost:8000" : RAW).replace(/\/$/, "");
 
 const TOKEN_KEY = "nirikshan.access";
 const REFRESH_KEY = "nirikshan.refresh";
