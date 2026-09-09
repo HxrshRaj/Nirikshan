@@ -92,6 +92,19 @@ Use **Manual Deploy → Deploy latest commit** on each service, or flip
 
 ---
 
+## Troubleshooting
+
+- **API deploy fails at `alembic upgrade head` / "SSL required"** — add
+  `?sslmode=require` to `NIRIKSHAN_DATABASE_URL` on `nirikshan-api` (Render's
+  external Postgres string needs it; the internal one usually doesn't).
+- **Web shows "Failed to fetch" / login hangs** — `API_INTERNAL_BASE_URL` on
+  `nirikshan-web` doesn't match the real API URL. Fix and redeploy the web service.
+- **502 for ~50 s then works** — normal free-tier cold start.
+- **API restarts / "Out of memory"** — the free 512 MB is tight. Keep
+  `NIRIKSHAN_LLM_PROVIDER=mock`, or upgrade `nirikshan-api` to Starter.
+- **`relation "..." does not exist`** after 30 days — the free Postgres was
+  deleted. Recreate the database resource and re-run step 4.
+
 ## Deploying elsewhere
 
 The same knobs apply to any host:
