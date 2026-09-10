@@ -114,9 +114,11 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
       - name: Build images
-        run: docker compose build api web
+        run: docker compose build api web seed
       - name: Start datastores
         run: docker compose up -d --wait postgres redis
+      - name: Migrate + seed (topology, telemetry, demo users)
+        run: docker compose run --rm seed
       - name: Start api + worker + web
         run: docker compose up -d api worker web
       - name: Wait for api and web
@@ -131,12 +133,18 @@ jobs:
             echo "waiting for web ($i)"; sleep 3
           done
           curl -fsS -o /dev/null -w "web /login -> %{http_code}\n" http://localhost:3000/login
-      - name: Seed demo data + one incident
+      - name: Run one incident scenario
         run: |
-          TOK=$(curl -sf -X POST http://localhost:8000/api/auth/login \
-            -H 'Content-Type: application/json' \
-            -d '{"email":"admin@nirikshan.dev","password":"admin12345"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
-          curl -sf -X POST http://localhost:8000/api/demo/seed -H "Authorization: Bearer $TOK" >/dev/null
+          TOK=""
+          for i in $(seq 1 15); do
+            TOK=$(curl -s -X POST http://localhost:8000/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"admin@nirikshan.dev","password":"admin12345"}' \
+              | python3 -c 'import sys,json;print(json.load(sys.stdin).get("access_token",""))' 2>/dev/null || true)
+            [ -n "$TOK" ] && break
+            echo "login not ready ($i)"; sleep 3
+          done
+          test -n "$TOK" || { echo "could not authenticate"; exit 1; }
           curl -sf -X POST http://localhost:8000/api/demo/run-scenario -H "Authorization: Bearer $TOK" \
             -H 'Content-Type: application/json' \
             -d '{"scenario":"db-exhaustion","investigate":true,"propose_remediation":true}'
