@@ -233,9 +233,9 @@ docker compose up --build       # api :8000, web :3000
 # then: log in as admin@nirikshan.dev / admin12345, open Settings → seed + run a scenario
 ```
 
-**Hosted deploy:** `render.yaml` is a Render Blueprint (free tier — API + web +
-free Postgres + free Key Value; the event worker runs in-process via
-`NIRIKSHAN_RUN_WORKER_IN_PROCESS`). Step-by-step in
+**Hosted deploy:** `render.yaml` is a Render Blueprint (free tier — API + web as
+Docker web services; Postgres from Neon, optional Redis from Upstash; the event
+worker runs in-process via `NIRIKSHAN_RUN_WORKER_IN_PROCESS`). Step-by-step in
 [`DEPLOYMENT.md`](DEPLOYMENT.md), which also lists the env vars for any other host.
 
 ## 19. Testing

@@ -1,27 +1,18 @@
 # Render Blueprint - deploys Nirikshan on the free tier.
-#   nirikshan-db   : free PostgreSQL (NOTE: Render deletes free databases after 30 days)
-#   nirikshan-kv   : free Key Value (Redis-compatible) - streams + cache + rate limiting
-#   nirikshan-api  : FastAPI + the event worker running in-process (no separate worker service)
-#   nirikshan-web  : Next.js dashboard; proxies "/api/*" to the API (same-origin, no CORS)
 #
-# After the first deploy see DEPLOYMENT.md - you must confirm the two service
-# URLs and grab the generated admin password.
-
-databases:
-  - name: nirikshan-db
-    plan: free
-    databaseName: nirikshan
-    user: nirikshan
-    region: oregon
+# Render only runs the two Docker web services here (no per-account limit).
+# PostgreSQL and Redis come from external free providers so we avoid Render's
+# "one free database per account" cap and the 30-day free-Postgres expiry:
+#
+#   * PostgreSQL : Neon      (neon.tech)      - free, no expiry, no card
+#   * Redis      : Upstash   (upstash.com)    - free, no card   [optional]
+#
+# You paste both connection strings when Render prompts for the `sync: false`
+# vars. See DEPLOYMENT.md. Redis is optional: without it the API still serves
+# the full synchronous demo (seed + run-scenario); you just lose the reactive
+# worker pipeline and live SSE updates.
 
 services:
-  - type: keyvalue
-    name: nirikshan-kv
-    plan: free
-    region: oregon
-    ipAllowList: []          # reachable only from other services in this project
-    maxmemoryPolicy: noeviction
-
   - type: web
     name: nirikshan-api
     runtime: docker
@@ -41,20 +32,15 @@ services:
       - key: NIRIKSHAN_SECRET_KEY
         generateValue: true                 # random, kept across deploys
       - key: NIRIKSHAN_DATABASE_URL
-        fromDatabase:
-          name: nirikshan-db
-          property: connectionString
+        sync: false                         # <-- paste the Neon connection string
       - key: NIRIKSHAN_REDIS_URL
-        fromService:
-          type: keyvalue
-          name: nirikshan-kv
-          property: connectionString
+        sync: false                         # <-- paste the Upstash URL, or leave blank
       - key: NIRIKSHAN_RUN_WORKER_IN_PROCESS
         value: "true"
       - key: NIRIKSHAN_LLM_PROVIDER
-        value: mock                          # set to "groq" + add NIRIKSHAN_LLM_API_KEY for real AI
+        value: mock                         # set "groq" + add NIRIKSHAN_LLM_API_KEY for real AI
       - key: NIRIKSHAN_LLM_API_KEY
-        sync: false                          # optional; Render will prompt (leave blank for mock)
+        sync: false                         # optional; leave blank for the mock provider
       - key: NIRIKSHAN_REMEDIATION_MODE
         value: APPROVAL_REQUIRED
       - key: NIRIKSHAN_CORS_ORIGINS
