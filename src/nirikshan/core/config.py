@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     # Unset (default) => open ingestion, suitable for the local demo only.
     ingest_token: str | None = None
 
+    # Run the event-consumer + maintenance loop as a daemon thread inside the
+    # API process instead of a separate `worker` container. Intended for
+    # constrained single-service hosts (e.g. Render free tier). A dedicated
+    # worker process is still preferred anywhere it is available.
+    run_worker_in_process: bool = False
+
     # --- Datastores ---
     database_url: str = "sqlite+pysqlite:///./nirikshan.sqlite3"
     redis_url: str = "redis://localhost:6379/0"
@@ -83,6 +89,17 @@ class Settings(BaseSettings):
         allowed = {"OBSERVE", "RECOMMEND", "APPROVAL_REQUIRED", "AUTONOMOUS"}
         if v not in allowed:
             raise ValueError(f"remediation_mode must be one of {sorted(allowed)}")
+        return v
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_db_url(cls, v: str) -> str:
+        """Accept the bare URLs that managed hosts hand out (Render/Heroku give
+        ``postgres://`` / ``postgresql://``) and pin the psycopg v3 driver."""
+        if v.startswith("postgres://"):
+            v = "postgresql://" + v[len("postgres://") :]
+        if v.startswith("postgresql://"):
+            v = "postgresql+psycopg://" + v[len("postgresql://") :]
         return v
 
     # --- Derived helpers ---

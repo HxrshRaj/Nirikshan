@@ -1,0 +1,87 @@
+# Render Blueprint - deploys Nirikshan on the free tier.
+#   nirikshan-db   : free PostgreSQL (NOTE: Render deletes free databases after 30 days)
+#   nirikshan-kv   : free Key Value (Redis-compatible) - streams + cache + rate limiting
+#   nirikshan-api  : FastAPI + the event worker running in-process (no separate worker service)
+#   nirikshan-web  : Next.js dashboard; proxies "/api/*" to the API (same-origin, no CORS)
+#
+# After the first deploy see DEPLOYMENT.md - you must confirm the two service
+# URLs and grab the generated admin password.
+
+databases:
+  - name: nirikshan-db
+    plan: free
+    databaseName: nirikshan
+    user: nirikshan
+    region: oregon
+
+services:
+  - type: keyvalue
+    name: nirikshan-kv
+    plan: free
+    region: oregon
+    ipAllowList: []          # reachable only from other services in this project
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: nirikshan-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NIRIKSHAN_ENV
+        value: production
+      - key: NIRIKSHAN_LOG_LEVEL
+        value: INFO
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: NIRIKSHAN_SECRET_KEY
+        generateValue: true                 # random, kept across deploys
+      - key: NIRIKSHAN_DATABASE_URL
+        fromDatabase:
+          name: nirikshan-db
+          property: connectionString
+      - key: NIRIKSHAN_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: nirikshan-kv
+          property: connectionString
+      - key: NIRIKSHAN_RUN_WORKER_IN_PROCESS
+        value: "true"
+      - key: NIRIKSHAN_LLM_PROVIDER
+        value: mock                          # set to "groq" + add NIRIKSHAN_LLM_API_KEY for real AI
+      - key: NIRIKSHAN_LLM_API_KEY
+        sync: false                          # optional; Render will prompt (leave blank for mock)
+      - key: NIRIKSHAN_REMEDIATION_MODE
+        value: APPROVAL_REQUIRED
+      - key: NIRIKSHAN_CORS_ORIGINS
+        value: https://nirikshan-web.onrender.com
+      - key: NIRIKSHAN_BOOTSTRAP_ADMIN_EMAIL
+        value: admin@nirikshan.dev
+      - key: NIRIKSHAN_BOOTSTRAP_ADMIN_PASSWORD
+        generateValue: true                 # read it from this service's Environment tab
+      - key: NIRIKSHAN_RETENTION_LOGS_HOURS
+        value: "48"
+      - key: NIRIKSHAN_RETENTION_METRICS_HOURS
+        value: "96"
+
+  - type: web
+    name: nirikshan-web
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    healthCheckPath: /login
+    autoDeploy: false
+    envVars:
+      # Build arg: empty => the browser calls same-origin "/api/*".
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: ""
+      # Runtime: where Next forwards "/api/*". Update if the API got a different
+      # URL (name collision) - see DEPLOYMENT.md.
+      - key: API_INTERNAL_BASE_URL
+        value: https://nirikshan-api.onrender.com
