@@ -67,7 +67,8 @@ services:
       # Build arg: empty => the browser calls same-origin "/api/*".
       - key: NEXT_PUBLIC_API_BASE_URL
         value: ""
-      # Runtime: where Next forwards "/api/*". Update if the API got a different
-      # URL (name collision) - see DEPLOYMENT.md.
+      # Runtime: where Next forwards "/api/*". This must match the API service's
+      # real URL - Render appended "-u4hl" because the plain name was taken.
+      # If you re-create the API and it gets a different suffix, update this.
       - key: API_INTERNAL_BASE_URL
-        value: https://nirikshan-api.onrender.com
+        value: https://nirikshan-api-u4hl.onrender.com
