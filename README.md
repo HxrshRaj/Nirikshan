@@ -12,6 +12,22 @@ approval and a policy engine. When the LLM is unavailable the platform keeps
 detecting and managing incidents — the AI is an accelerator, never a
 single point of failure.
 
+## Live demo
+
+**https://nirikshan-web.onrender.com**
+
+Hosted on free tiers (Render web services · Neon Postgres · Upstash Redis), so
+the **first load takes ~30–60 s** while the instances wake from sleep.
+
+| Sign in as | Password | Can |
+|---|---|---|
+| `viewer@nirikshan.dev` | `viewer12345` | read everything — dashboards, incident detail, RCAs, ranked hypotheses, the AI tool-call audit trail |
+| `engineer@nirikshan.dev` | `engineer12345` | + re-run an AI investigation |
+
+(Scenario injection and remediation approval are admin-only and disabled for the
+public demo.) Deployment details and the Blueprint are in
+[`DEPLOYMENT.md`](DEPLOYMENT.md).
+
 ---
 
 ## 1. Overview
