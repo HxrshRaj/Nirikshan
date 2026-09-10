@@ -41,5 +41,5 @@ cp .env.example .env               # optional; sane defaults otherwise
 `.github/workflows/ci.yml` runs on every push/PR: ruff, mypy (advisory),
 Alembic up/down/up, the Python test suite with coverage, integration tests on
 real Postgres + Redis service containers, the AI eval harness, both Docker image
-builds, the frontend lint/type/build, and a supplementary Playwright E2E job
-against the compose stack.
+builds, and the frontend lint/type/build. A heavyweight Playwright E2E job
+against the compose stack is available on a manual **Run workflow** trigger.

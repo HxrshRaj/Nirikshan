@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:      # manual trigger for the full-stack Playwright job
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -103,8 +104,10 @@ jobs:
   e2e:
     name: Frontend E2E (Playwright against the compose stack)
     runs-on: ubuntu-latest
-    # Supplementary: the Python HTTP-flow e2e already covers the lifecycle.
-    # Don't fail the whole pipeline on infra flakiness here.
+    # Heavyweight (builds the whole compose stack). The Python HTTP-flow e2e
+    # already gates the incident lifecycle on every push, so this runs only on
+    # a manual "Run workflow" trigger. Locally: `cd apps/web && npm run e2e`.
+    if: github.event_name == 'workflow_dispatch'
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4

@@ -71,8 +71,10 @@ incident-detail RCA block, ranked hypotheses, evidence panel, timeline and the
 "Demo / Mock Provider" label; the service-map SVG; the AI-run page's tool-call
 audit trail and grounding panel; and that a `VIEWER` sees the "requires ADMIN"
 gate on Settings. Screenshots land in `apps/web/e2e/screenshots/` (a curated
-copy is in `docs/screenshots/`). The `e2e` CI job runs this against a freshly
-built compose stack.
+copy is in `docs/screenshots/`). CI has an `e2e` job that runs this against a
+freshly built compose stack, but only on a manual **Run workflow**
+(`workflow_dispatch`) trigger — the Python HTTP-flow e2e gates the lifecycle on
+every push, so the heavyweight browser job stays opt-in.
 
 ## Running integration locally
 

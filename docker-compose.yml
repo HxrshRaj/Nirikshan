@@ -74,9 +74,15 @@ services:
     restart: "no"
 
   web:
-    build: { context: ./apps/web, dockerfile: Dockerfile }
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        # baked into the client bundle: the browser calls the API directly on
+        # the published port (CORS allows :3000). Render instead builds with an
+        # empty value and uses the same-origin /api proxy.
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
       API_INTERNAL_BASE_URL: http://api:8000
     ports: ["3000:3000"]
     depends_on:
