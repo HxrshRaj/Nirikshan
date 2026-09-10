@@ -20,14 +20,19 @@ resources on Render's free plan:
 
 ---
 
-## 1. Push the branch and open the Blueprint
+## Branch model
 
-```bash
-git push -u origin deploy/render      # or merge to main first
-```
+Do **all** work on `main`. Render's Blueprint locks its services to the
+`deploy/render` branch, so a GitHub Action
+(`.github/workflows/mirror-deploy-branch.yml`) auto-fast-forwards
+`deploy/render` to every `main` commit. You never touch `deploy/render` or the
+branch setting in Render. `autoDeploy` is off, so you pick when to ship with
+**Manual Deploy → Deploy latest commit** on `nirikshan-api` and `nirikshan-web`.
+
+## 1. Open the Blueprint
 
 In the Render dashboard: **New → Blueprint**, pick the repo, choose the
-`deploy/render` branch (or `main`). Render reads `render.yaml` and shows the four
+`deploy/render` branch. Render reads `render.yaml` and shows the four
 resources. It will prompt once for any `sync: false` var:
 
 - `NIRIKSHAN_LLM_API_KEY` — **leave blank** to use the built-in mock provider.

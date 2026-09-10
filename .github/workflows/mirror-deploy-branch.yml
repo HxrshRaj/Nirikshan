@@ -1,0 +1,34 @@
+name: Mirror main -> deploy/render
+
+# Render's Blueprint locked its services to the `deploy/render` branch and there
+# is no clean way to repoint them at `main`. Instead of maintaining that branch
+# by hand, this keeps `deploy/render` as an automatic mirror of `main`:
+# every push to `main` fast-forwards `deploy/render` to the same commit.
+#
+# All development happens on `main`. `deploy/render` is never committed to
+# directly. Render still deploys from `deploy/render` (autoDeploy is off, so you
+# choose when via "Manual Deploy") - no dashboard changes are ever needed.
+#
+# Pushes made with GITHUB_TOKEN do not trigger workflows, so this cannot loop.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-deploy-render
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Force deploy/render to match main
+        run: git push origin "${{ github.sha }}:refs/heads/deploy/render" --force
