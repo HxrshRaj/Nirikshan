@@ -12,6 +12,10 @@ COPY . .
 # call same-origin "/api/*" (proxied by next.config rewrites to API_INTERNAL_BASE_URL).
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+# next.config reads this in rewrites() - which Next evaluates at BUILD time and
+# bakes into routes-manifest.json - so it must be present here, not only at runtime.
+ARG API_INTERNAL_BASE_URL=""
+ENV API_INTERNAL_BASE_URL=$API_INTERNAL_BASE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
