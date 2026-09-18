@@ -237,10 +237,75 @@ hammering a dead Redis (each call would otherwise pay the socket timeout).
 PostgreSQL remains authoritative — Redis loss degrades liveness, not
 correctness.
 
+## gRPC: real-time service-health streaming
+
+The REST API already exposes a point-in-time service-health snapshot
+(`GET /api/services/{name}/health`), and the dashboard polls it on an
+interval. That's the right shape for "render the Overview page." It's the
+wrong shape for "watch this service's health as it changes" — a terminal
+dashboard, an on-call CLI, or another internal service subscribing to health —
+which is naturally a server-push stream, not a client poll loop. That's
+exactly what gRPC server-streaming is for, and it's a poor fit for plain REST
+(the alternative is polling, or bolting on SSE/WebSockets with no schema or
+generated client code). So `grpc_service/` adds a second, narrow transport
+alongside the REST API — same port-different-protocol pattern the project
+already uses for Postgres vs. Redis — for exactly the one case where it earns
+its place. It is **additive only**: it computes every field from
+`nirikshan.telemetry.aggregate.compute_service_health()`, the identical
+function the REST API, the dashboard, and the alert engine already call. No
+separate data source, no invented fields.
+
+*(Named `grpc_service/`, not the more obvious `grpc/`, so `python -m
+grpc_service.server` never shadows the installed `grpc` package on `sys.path` —
+a well-known footgun with same-named local packages.)*
+
+**Service** (`grpc_service/proto/service_health.proto`):
+
+```proto
+service ServiceHealthStream {
+  // Server-streaming: a health update every time the computed snapshot
+  // changes, starting with the current snapshot immediately on subscribe.
+  rpc StreamServiceHealth(ServiceHealthRequest) returns (stream ServiceHealthUpdate);
+
+  // Unary: one-off snapshot, for comparison against the streaming RPC.
+  rpc GetServiceHealthSnapshot(ServiceHealthRequest) returns (ServiceHealthUpdate);
+}
+```
+
+`ServiceHealthUpdate` mirrors `ServiceHealthSnapshot` field-for-field: `status`
+(`HEALTHY`/`DEGRADED`/`UNHEALTHY`/`UNKNOWN`), `latency_p95_ms`,
+`latency_avg_ms`, `error_rate`, `request_rate_per_min`, `log_error_count`,
+`cpu_usage`, `memory_usage`, `db_connections`, `queue_depth`, `reasons`, plus
+`tier`, `window_seconds` and `computed_at_unix_ms`. Optional numeric fields use
+proto3 `optional` so "no telemetry yet" (`HasField(...) == False`) is
+distinguishable from a genuine `0.0`. Full definition:
+[`grpc_service/proto/service_health.proto`](grpc_service/proto/service_health.proto).
+
+**Run the server** (reads the same database as the API/worker — set
+`NIRIKSHAN_DATABASE_URL` the same way):
+
+```bash
+pip install -e ".[grpc]"
+python grpc_service/server.py                 # binds [::]:50051 (NIRIKSHAN_GRPC_PORT)
+```
+
+**Run the test client** — connects, calls the unary RPC once, then subscribes
+to the stream and prints every update as it arrives:
+
+```bash
+python grpc_service/client.py payment-service
+python grpc_service/client.py payment-service --max-updates 5   # exit after 5 updates (scripted checks)
+```
+
+Also wired into Docker Compose as its own service (`grpc`, port `50051`,
+`docker compose up --build`) and the shared image/entrypoint (`command: grpc`).
+Regenerate the stubs after editing the `.proto` with
+`python grpc_service/regenerate_stubs.py`.
+
 ## 18. Docker
 
-`docker compose up --build` starts `postgres`, `redis`, `api`, `worker`, a
-one-shot `seed`, and `web`. The API container waits for the DB, runs
+`docker compose up --build` starts `postgres`, `redis`, `api`, `worker`, `grpc`,
+a one-shot `seed`, and `web`. The API container waits for the DB, runs
 `alembic upgrade head`, then serves. Images run as non-root with healthchecks.
 
 ```bash
@@ -368,6 +433,7 @@ nirikshan/
 │   ├── workers/      event consumer loop + handlers + periodic maintenance
 │   └── demo/         topology, deterministic telemetry generator, scenarios, remediation flow
 ├── apps/web/         Next.js dashboard (App Router, Tailwind) + Playwright e2e/
+├── grpc_service/     real-time service-health gRPC server + client (proto, generated stubs)
 ├── migrations/       Alembic
 ├── evaluation/       AI evaluation harness runner
 ├── scripts/          load test

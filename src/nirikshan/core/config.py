@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     redis_stream_maxlen: int = 50_000
 
+    # --- gRPC (grpc_service/ - real-time service-health streaming, additive to the REST API) ---
+    grpc_port: int = 50051
+    # How often the streaming RPC re-polls the real health computation for changes.
+    grpc_default_poll_interval_seconds: int = 2
+    grpc_default_window_seconds: int = 600  # matches the REST /health endpoint's default
+
     # --- Retention ---
     retention_logs_hours: int = 72
     retention_metrics_hours: int = 168

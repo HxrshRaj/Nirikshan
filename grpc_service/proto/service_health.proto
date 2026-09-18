@@ -1,0 +1,66 @@
+// Real-time service-health telemetry over gRPC.
+//
+// Why gRPC here specifically: the REST API already exposes this exact snapshot
+// (GET /api/services/{name}/health), and the dashboard polls it on an interval.
+// "Watch this service's health as it changes" - a terminal dashboard, an
+// on-call CLI, another internal service subscribing to health - is naturally a
+// server-push stream, not a client-driven poll loop. That is exactly what gRPC
+// server-streaming is for, and it's a poor fit for plain REST (which would mean
+// either polling or bolting on SSE/WebSockets with no schema/codegen). This
+// service is purely additive: it computes the update from
+// nirikshan.telemetry.aggregate.compute_service_health() - the identical
+// function the REST API, the dashboard, and the alert engine already use - so
+// every field here is real, already-tracked data, never a separate feed.
+syntax = "proto3";
+
+package nirikshan.health.v1;
+
+option go_package = "nirikshan/health/v1;healthv1"; // harmless if unused; keeps protoc happy for non-Python consumers
+
+service ServiceHealthStream {
+  // Server-streaming: streams a health update every time the computed snapshot
+  // changes, starting with the current snapshot immediately on subscribe.
+  rpc StreamServiceHealth(ServiceHealthRequest) returns (stream ServiceHealthUpdate);
+
+  // Unary: a single one-off snapshot - the same computation, for comparison
+  // against the streaming RPC without opening a long-lived call.
+  rpc GetServiceHealthSnapshot(ServiceHealthRequest) returns (ServiceHealthUpdate);
+}
+
+enum HealthStatus {
+  HEALTH_STATUS_UNSPECIFIED = 0;
+  HEALTHY = 1;
+  DEGRADED = 2;
+  UNHEALTHY = 3;
+  UNKNOWN = 4;
+}
+
+message ServiceHealthRequest {
+  string service_name = 1;
+  string environment = 2;           // optional; server defaults to "production" if empty
+  int32 window_seconds = 3;         // optional; server defaults to 600s (same as the REST endpoint) if 0
+  int32 poll_interval_seconds = 4;  // streaming only; optional, server defaults to 2s if 0
+}
+
+// Mirrors nirikshan.telemetry.aggregate.ServiceHealthSnapshot field-for-field -
+// nothing here is invented. `optional` scalars distinguish "no telemetry for
+// this metric yet" from a real 0.0, matching the Python dataclass's `| None`.
+message ServiceHealthUpdate {
+  string service_name = 1;
+  int32 tier = 2;
+  HealthStatus status = 3;
+  int32 window_seconds = 4;
+
+  optional double latency_p95_ms = 5;
+  optional double latency_avg_ms = 6;
+  optional double error_rate = 7;
+  optional double request_rate_per_min = 8;
+  int32 log_error_count = 9;
+  optional double cpu_usage = 10;
+  optional double memory_usage = 11;
+  optional double db_connections = 12;
+  optional double queue_depth = 13;
+  repeated string reasons = 14;
+
+  int64 computed_at_unix_ms = 15; // when this snapshot was computed - proves live vs. replayed
+}

@@ -2,6 +2,7 @@
 # Nirikshan container entrypoint.
 #   api    -> wait for DB, run migrations, start uvicorn
 #   worker -> wait for DB, start the event worker
+#   grpc   -> wait for DB, start the real-time service-health gRPC server
 #   demo   -> wait for DB, run migrations, seed the demo environment
 #   *      -> exec whatever was passed
 set -eu
@@ -46,6 +47,10 @@ case "${1:-api}" in
   worker)
     wait_for_db
     exec python -m nirikshan.workers  # runs the consumer + maintenance loop
+    ;;
+  grpc)
+    wait_for_db
+    exec python grpc_service/server.py
     ;;
   demo)
     wait_for_db

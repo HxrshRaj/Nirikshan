@@ -22,10 +22,10 @@ venv: ## Create the Python virtualenv
 
 install: ## Install the package + dev extras
 	$(PY) -m pip install --upgrade pip
-	$(PY) -m pip install -e ".[dev]"
+	$(PY) -m pip install -e ".[dev,grpc]"
 
 lint: ## Ruff
-	$(PY) -m ruff check src tests evaluation scripts
+	$(PY) -m ruff check src tests evaluation scripts grpc_service
 
 typecheck: ## mypy (advisory)
 	$(PY) -m mypy src || true

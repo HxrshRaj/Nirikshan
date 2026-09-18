@@ -44,9 +44,9 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install --upgrade pip setuptools && pip install -e ".[dev]"
+      - run: pip install --upgrade pip setuptools && pip install -e ".[dev,grpc]"
       - name: Ruff
-        run: ruff check src tests evaluation
+        run: ruff check src tests evaluation grpc_service
       - name: Type check
         run: mypy src || true   # advisory: type coverage is partial by design
       - name: Alembic migrations apply cleanly

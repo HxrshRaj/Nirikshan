@@ -63,6 +63,19 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
+  # Real-time service-health streaming over gRPC (grpc_service/) - additive to
+  # the REST API, reads the same database via the same health computation.
+  grpc:
+    build: { context: ., dockerfile: Dockerfile }
+    command: ["grpc"]
+    environment: *python-env
+    ports: ["50051:50051"]
+    # plain TCP service, not HTTP - the image's curl healthcheck doesn't apply
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+
   # one-shot: seeds topology + baseline telemetry + demo users, then exits
   seed:
     build: { context: ., dockerfile: Dockerfile }

@@ -15,12 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # --- dependency layer (cached) ---
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install --upgrade pip && pip install ".[dev]"
+RUN pip install --upgrade pip && pip install ".[dev,grpc]"
 
 # --- app layer ---
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY evaluation ./evaluation
+COPY grpc_service ./grpc_service
 COPY infrastructure/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
@@ -28,7 +29,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN useradd --create-home --uid 10001 nirikshan && chown -R nirikshan:nirikshan /app
 USER nirikshan
 
-EXPOSE 8000
+EXPOSE 8000 50051
 HEALTHCHECK --interval=15s --timeout=5s --start-period=25s --retries=5 \
     CMD curl -fsS http://localhost:8000/api/health || exit 1
 

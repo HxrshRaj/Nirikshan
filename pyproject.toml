@@ -32,6 +32,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+grpc = [
+    "grpcio==1.68.1",
+    "grpcio-tools==1.68.1",
+    "protobuf==5.29.2",
+]
 dev = [
     "pytest==9.1.1",
     "pytest-cov==6.0.0",
@@ -70,7 +75,8 @@ filterwarnings = [
 [tool.ruff]
 line-length = 110
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "grpc_service"]
+extend-exclude = ["grpc_service/generated"]  # protoc-generated, not hand-maintained
 
 [tool.ruff.lint]
 # Focus on correctness-relevant rules; E501 (line length) is not enforced.
