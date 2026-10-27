@@ -60,6 +60,25 @@ jobs:
       - name: Dependency audit (advisory)
         run: pip-audit --skip-editable || true
 
+  sdk:
+    name: Python SDK (lint, tests on 3.9 and 3.13)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.13"]
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest
+
   frontend:
     name: Frontend (lint, type, build)
     runs-on: ubuntu-latest

@@ -137,6 +137,17 @@ recent deployment id) → bulk storage → `TELEMETRY_RECEIVED` event. Malformed
 rows are skipped and counted, never fatal to the batch. Retention is enforced
 periodically by the worker (configurable per signal type).
 
+### Python SDK ([`sdk/python`](sdk/python/README.md))
+
+A dependency-free client that captures unhandled and handled exceptions with stack
+frames, a grouping fingerprint, breadcrumbs, tags and release, scrubs secrets, and
+sends them to `/api/telemetry/logs` through a bounded background queue (batching,
+retry with backoff and jitter, `Retry-After` on 429, flush on exit). It never blocks
+or raises into the host app, and includes ASGI middleware, a `logging` handler and
+an asyncio handler. 23 SDK tests run against a real local HTTP server (including
+server-down, slow-server, full-queue and 401/429/503 cases), plus 5 end-to-end tests
+against the real API. The server now sends a standard `Retry-After` header on 429.
+
 ## 6. Incident engine
 
 Alerts are correlated (`detection/correlation.py`) into a new or existing open
@@ -434,6 +445,7 @@ nirikshan/
 │   └── demo/         topology, deterministic telemetry generator, scenarios, remediation flow
 ├── apps/web/         Next.js dashboard (App Router, Tailwind) + Playwright e2e/
 ├── grpc_service/     real-time service-health gRPC server + client (proto, generated stubs)
+├── sdk/python/       nirikshan-sdk: error-capture client (own package, tests, CI job)
 ├── migrations/       Alembic
 ├── evaluation/       AI evaluation harness runner
 ├── scripts/          load test
