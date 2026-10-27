@@ -118,9 +118,16 @@ def _install_error_handlers(app: FastAPI) -> None:
     async def _domain(request: Request, exc: NirikshanError):
         if exc.status_code >= 500:
             log.warning("api.domain_error", code=exc.code, message=exc.message)
+        headers = None
+        if exc.status_code == 429:
+            # standard header so SDKs and proxies back off correctly (details keeps the same value)
+            retry = (exc.details or {}).get("retry_after_seconds")
+            if retry is not None:
+                headers = {"Retry-After": str(max(1, int(float(retry) + 0.999)))}
         return JSONResponse(
             status_code=exc.status_code,
             content=ErrorEnvelope(code=exc.code, message=exc.message, details=exc.details).model_dump(),
+            headers=headers,
         )
 
     @app.exception_handler(RequestValidationError)
