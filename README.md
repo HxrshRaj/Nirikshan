@@ -424,6 +424,16 @@ against real historical incidents.
 
 ---
 
+## Operations: diagnostics and runbooks
+
+`ops/diagnose.sh` is a read-only first-line triage script for Linux hosts. It checks DNS resolution, TCP ports, HTTP status and latency, error lines in logs, disk and memory pressure, and unhealthy Docker containers, prints `PASS/WARN/FAIL` per check, and exits 0/1/2.
+
+```bash
+ops/diagnose.sh --dns api.example.com --tcp localhost:5432 --http http://localhost:8000/health --disk / --mem --docker
+```
+
+Runbooks in `ops/runbooks/` cover service down / 5xx, high latency, disk full, and DNS/network issues. `ops/ESCALATION.md` defines severity levels and handover content; `ops/INCIDENT_TEMPLATE.md` is the post-incident report format. The script is tested against real local sockets, an HTTP server and log files in `tests/ops/`.
+
 ## Repository layout
 
 ```
