@@ -45,6 +45,8 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install --upgrade pip setuptools && pip install -e ".[dev,grpc]"
+      - name: Shellcheck ops scripts
+        run: shellcheck ops/diagnose.sh
       - name: Ruff
         run: ruff check src tests evaluation grpc_service
       - name: Type check
