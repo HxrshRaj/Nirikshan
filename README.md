@@ -432,6 +432,8 @@ against real historical incidents.
 ops/diagnose.sh --dns api.example.com --tcp localhost:5432 --http http://localhost:8000/health --disk / --mem --docker
 ```
 
+`ops/logstats.sh` summarises a log with plain Unix tools (awk, grep, sort, uniq): lines by level, errors per minute, and the most repeated error messages, with numbers, hex ids and UUIDs masked so near-identical errors group together. `--access` mode reads nginx/Apache combined access logs (status classes, top paths and client IPs, 5xx rate), and `-` reads stdin, e.g. `journalctl -u app | ops/logstats.sh -`.
+
 Runbooks in `ops/runbooks/` cover service down / 5xx, high latency, disk full, and DNS/network issues. `ops/ESCALATION.md` defines severity levels and handover content; `ops/INCIDENT_TEMPLATE.md` is the post-incident report format. The script is tested against real local sockets, an HTTP server and log files in `tests/ops/`.
 
 ## Repository layout
